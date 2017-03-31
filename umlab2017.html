@@ -1,0 +1,444 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"> 
+  <title>Tufts: Testing the UM</title>
+  <link rel = "stylesheet" type = "text/css" href = "course.css">
+  <style type="text/css">
+  body {max-width: 50em;}
+  table {
+    border-collapse: collapse;
+  }
+
+  table, th {
+  border: 2px solid black;
+  }
+  td {
+  border: 1px solid black;
+  }
+
+  table   { width: 100%;}
+  th.topic { width: 15%;}
+  th.command { width: 25%;}
+  </style>
+</head>
+
+<body class="homework">
+
+
+
+<!-- Common course navigation menu bar  -->
+
+<div id = "menubar">
+<p>
+  <a class='menu_item' href='../.'>Home</a>  <a class='menu_item' href='../cal'>Calendar</a>  <a class='menu_item' href='../reference/index'>Reference</a>  <a class='menu_item' href='../admin'>Admin</a>  <a class='menu_item' href='https://piazza.com/tufts/spring2017/comp40/home'>Piazza</a></p>
+</div>
+<div id = "topmatter">
+<!--
+  <div id = "logo" onclick = "document.location = './index.html'"></div>
+-->
+  <div id = "topcontent">
+    <h1>Comp 40 Lab 9:<br>Test Code for a Universal Machine</h1>
+  </div>
+</div>
+
+<div id = "maincontent" class = "plain_text">
+
+  <div id    = 'itsnew' 
+       style = "border:solid; border-width:1px; padding:0.5em; color:blue;
+                text-align:  center; verticall-align:  middle;">
+     This lab is modified for Spring 2017. 
+  </div>
+
+<h2 id="prelude">Prelude</h2>
+
+
+<p>What is the UM again?</p>
+
+<h3>The Old Story</h3>
+<img src="intel.png">
+
+
+<h3>The New Story</h3>
+<img src="UM.png">
+<br><br>
+In both diagrams, an algorithm implemented by "the program" is executed and input is turned into output. At a very high level, these diagrams are the same! (which is why the U in UM stands for <i>universal</i>) 
+
+As we can see however, there are many more boxes and arrows in the second diagram, and keeping this picture in your head is one of the big challenges for your HW6. Luckily for today, we'll just be dealing with just a small number of these boxes.
+
+<h2 id="prelude">Prelude</h2>
+
+<p>With so many pieces of the puzzle, it is very easy to get confused about the various "types" of data we work with when we're writing an emulator like the UM:</p>
+
+<ul>
+  <li>The code for the implementation of the emulator (In our case, C code that you are writing for HW6)</li>
+  <li>The code the UM will execute (The UM binary format described in the spec - a file containing a sequence of 32-bit instructions)</li>
+  <li>Input for that program (Can be anything)</li>
+  <li>The expected output from that program (Again, can be anything)</li>
+</ul>
+
+<p>In today's lab, we will be working primarily with the last three points above
+ in order to write unit tests for your UM.  As mentioned above, though, the code
+  that the UM runs is in a binary format, which is hard to write by hand.</p>
+
+<p>To make the process of testing your UM a bit easier, we will write C code in
+ this lab that will generate the UM code for unit tests that you write.  A 
+ typical invocation of the resulting C program will look like:</p>
+
+<pre style="margin-left:1cm">
+  ./writetests
+</pre>
+
+<p>Which usually takes no arguments, but can also be given names of specific 
+tests to generate. For each named unit test, your program will generate:</p>
+
+<ul>
+  <li>A file ending in <code>.um</code> that contains the 
+  <span style="font-style:italic;">code to be emulated by the UM</span></li>
+  <li>A file ending in <code>.0</code> that contains the 
+  <span style="font-style:italic;">the input to be given to the UM</span>
+   as it runs the code in the <code>.um</code> file (can be empty)</li>
+  <li>A file ending in <code>.1</code> that contains the 
+  <span style="font-style:italic;">expected output</span> that you can 
+  compare against the actual output (can be empty)</li>
+</ul>
+
+<p style="font-style:italic;">A lot of this is done for you.</p>
+
+<p>It is easy to ignore these tests, or to write them once and never 
+run them.  As with arith, however, you will save yourself a significant
+amount of time if you understand these tests fully and run them as you
+implement pieces of your UM.  The course staff provides a few test 
+programs, but these are more system tests to test that all the pieces
+of your UM are working well together, and are not adequate to test 
+that specific pieces of functionality are implemented correctly.</p>
+
+<span style="font-weight:bold;">Your task:</span>
+<p>Your program must 
+<span style="font-style:italic;">build and output</span>
+unit tests for the UM. At the end of lab, submit four of these tests.
+To do this:</p>
+
+<ol>
+  <li>Write a function named <code>three_register</code> that, given 
+  an opcode and identifiers for three registers, returns a 32-bit 
+  UM instruction which &hellip;</li>
+  <li>Read and understand the function named <code>emit</code>, which
+  appends a UM instruction to an instruction stream. (A stream can be
+  thought of as a queue - instructions are emitted into the stram, and 
+  then the instructions are output in FIFO order when they are written 
+  to a file). This function involves a tricky cast to 
+
+  <code>(void *)(uintptr_t)</code>&hellip; more on this later.</li>
+  <li>Write the function <code>UM_write_sequence</code> which takes a 
+
+  stream and writes the instructions to file, in big-endian byte order.</li>
+
+  <li>
+    For each unit test in the lab:
+    <ol>
+      <li>Write a C function that uses the <code>three_register</code> function
+      you provided above to produce a stream of instructions for that unit 
+      test. In two cases (<code>emit_halt_test</code> and 
+      <code>emit_verbose_halt_test</code>), these functions are written for 
+      you. Use them as guidance.</li>
+
+      <li>If there are functions that aren't defined, but that are required
+      to write the unit test, define them! This will include wrapper functions
+      on <code>three_register</code> (like <code>output</code>, which is 
+      similar to the <code>halt</code> and <code>add</code> instructions
+      defined later in this handout), and <code>loadval</code> 
+      (which returns the other format of UM instruction).</li>
+
+      <li>Incorporate the test into umlabwrite.c, compile, and write the unit
+      test to a <code>.um</code> file.</li>
+    </ol>
+  </li>
+  <li>Once written, examine your unit tests using <code>xxd</code>. 
+  (You may use other tools, like <code>objdump</code> or <code>hexdump</code>,
+  but this lab will discuss primarily <code>xxd</code>).</li>
+</ol>
+
+<h2 id="gettingit">Getting the lab materials</h2>
+
+You should get the code from this handout by running:
+<pre style="margin-left:1cm">
+git clone /comp/40/git/um
+</pre>
+
+<h2 id="individualinstructions">Creating Individual Instructions</h2>
+<p>You will define one instruction-making function for each UM instruction 
+format. Since there are only two such formats, you'll need only two 
+functions:</p>
+
+<pre>
+  typedef uint32_t Um_instruction;
+  typedef enum Um_Opcode {
+    CMOV = 0, SLOAD, SSTORE, ADD, MUL, DIV,
+    NAND, HALT, ACTIVATE, INACTIVATE, OUT, IN, LOADP, LV
+  } Um_Opcode;
+
+  Um_instruction three_register(Um_opcode op, int ra, int rb, int rc);
+  Um_instruction loadval(unsigned ra, unsigned val);
+</pre>
+
+<p>Not every instruction requires all three registers. For example, the 
+<code>halt</code> instruction behaves the same no matter what registers appear
+in fields <span style="font-style:italic;">A, B,</span> and 
+<span style="font-style:italic;">C</span>. You should create a function for every instruction, e.g.</p>
+
+<pre>
+  Um_instruction halt(void)
+  {
+          return three_register(HALT, 0, 0, 0); 
+  }
+</pre>
+
+<p>This is clearer than simply calling <code>three_register</code> with 
+extraneous arguments (and applies to other instructions than <code>halt</code>,
+such as <code>ouput</code>).</p>
+
+<h2 id="accumulatinginstructions">Accumulating Instructions in Streams</h2>
+
+<p>To create a unit test, you will accumulate its instructions one at a time 
+in an <span style="font-style:italic;">instruction stream</span>.</p>
+
+<p>You will append each instruction to the stream, which is called 
+<span style="font-style:italic;">emitting</span> the instruction. Notice the
+case to <code>uintptr_t</code>, and subsequently to <code>void *</code>:</p>
+
+<pre>
+  static inline void emit(Seq_T stream, Um_instruction inst)
+  {
+          assert(sizeof(inst) <= sizeof(uintptr_t));
+          Seq_addhi(stream, (void *)(uintptr_t)inst);
+  }
+</pre>
+
+<p>The type <code>uintptr_t</code> is an unsigned integer type that is large
+enough to hold a pointer value. It serves as an intermediary point between
+<code>Um_instruction (uint32_t)</code> and <code>void *</code>, as the compiler
+complains when you try to cast integer types directly to pointers.</p>
+
+<p>To represent the instruction stream, we'll use Hanson's <code>Seq_T</code>. 
+Each element will contain a <code>void *</code> that has been cast from 
+<code>uintptr_t</code>.</p>
+
+<p>You'll need to define a way to write a <code>Seq_T</code> to disk using the
+UM binary format:</p>
+
+<pre>
+  extern Um_write_sequence(FILE *output, Seq_T stream);
+</pre>
+
+<p>Once you have a stream, this function should take that stream, and write all
+instructions stored in the stream to disk in big-endian order.</p>
+
+<h2 id="infrastructure">Infrastructure for Writing Unit Tests</h2>
+
+<p>Finally, in the file <code>umlabwrite.c</code> is a main program which can
+emit the files for one or more unit tests. It will emit the unit tests 
+(as well as necessary input in a <code>.0</code> file, and expected output in a
+<code>.1</code>) that are named on the command line. If no test is named, it
+will emit all of them.</p>
+
+<p>To add a unit test, create a new entry in the <code>tests</code> array at
+the top of the file. Your entry should be of the type
+<code>struct test_info</code>, using <code>emit_halt_test</code> and
+<code>emit_verbose_halt_test</code> as examples of the format.</p>
+
+<p>Note that, in <code>struct test_info</code>, the structure field declared
+as</p>
+
+<pre>
+  void (*emit_test)(Seq_T stream)
+</pre>
+
+<p>is a pointer to a function that, when called, appends a sequence of 
+instructions to its argument. The bulk of this lab is to write those 
+functions.</p>
+
+<h2>Unit Tests You Must Submit</h2>
+
+<p>There are four unit tests you must submit for this lab:</p>
+
+<h3>First Example: Halt</h3>
+
+<p>Let's start with the simplest possible unit test: the program that consists
+only of <code>halt</code>.</p>
+
+<pre>
+  void emit_halt_test(Seq_T stream)
+  {
+          emit(stream, halt());
+  }
+</pre>
+
+<p>Notice that, even though there's only one instruction, all unit tests
+consist of streams, so this unit test is simply a stream with one emission.</p>
+
+<p>On its own, this test isn't all that interesting. But you should now be
+able to examine the binary data in your file <code>halt.um</code>. For
+instance, <code>xxd halt.um</code> produces</p>
+
+<pre>
+  00000000: 7000 0000                                  p...
+</pre>
+
+<p>Note the <code>p...</code> at the end of the output. You can remove this
+(and the line numbers) with the <code>-p</code> flag. As we'll see in later
+tests, there are more flags and options to format the output for better 
+readability.</p>
+
+<h3>Second Example: Addition</h3>
+
+<p>The <code>halt</code> instruction is essential to any UM program, but it's
+a boring instruction to look at on disk. Let's try something a bit more
+interesting: the <code>add</code> instruction. This instruction requires
+registers - based on what registers you use in the instruction, you'll see
+different output on disk.</p>
+
+<p>The add instruction should look something like this:</p>
+
+<pre>
+  typedef enum Um_register { r0 = 0, r1, r2, r3, r4, r5, r6, r7 } Um_register;
+
+  static inline Um_instruction add(Um_register a, Um_register b, Um_register c)
+  {
+          return three_register(ADD, a, b, c);
+  }
+</pre>
+
+<p>Write a UM binary that adds r2 and r3, placing the results in r1, then halts.
+This isn't really up to full unit test standards (how would you know if the add
+worked?) but it gives you another chance to inspect your output. We can use
+<code>xxd</code> to inspect the hex - <code>xxd -c 4 -g 4 add.um</code>:</p>
+
+<pre>
+  00000000: 30000053  0..S
+  00000004: 70000000  p...
+</pre>
+
+<p>Try changing the registers used in the <code>add</code> instruction and
+looking at the corresponding output from <code>xxd</code>.</p>
+
+<h3>Third Example: A More Verbose Halt Test</h3>
+
+<p>Here we're going to create a sequence of instructions that begins with a
+<code>halt</code>. In case the <code>halt</code> doesn't work, we'll have the
+UM write "Bad!\n" before failing. That way, you can compare your output to an
+empty file. We're assuming you have defined function <code>output</code>
+which creates an <code>output</code> instruction.</p>
+
+<pre>
+  void emit_verbose_halt_test(Seq_T stream)
+  {
+          emit(stream, halt());
+          emit(stream, loadval(r1, 'B'));
+          emit(stream, output(r1));
+          emit(stream, loadval(r1, 'a'));
+          emit(stream, output(r1));
+          emit(stream, loadval(r1, 'd'));
+          emit(stream, output(r1));
+          emit(stream, loadval(r1, '!'));
+          emit(stream, output(r1));
+          emit(stream, loadval(r1, '\n'));
+          emit(stream, output(r1));
+  }
+</pre>
+
+<p>When inspecting this binary (you should name it <code>verbose-halt.um</code>)
+, you can find ASCII character codes by running <code>man ascii</code>, though
+the extram column of ASCII and dots from <code>xxd</code> generally handles
+that for you.</p>
+
+<h3>Full Unit Test: Printing a Digit</h3>
+
+<p>The last test we'll explicitly ask you to write is one with output we
+<span style="font-style:italic;">do</span> want to see. You'll write a unit
+test that prints out a digit after an addition. For the purposes of consistency
+when submitting, we're restricting that digit to 6. As you'll see in one of the
+suggested unit tests below, an even better unit test would be to take the digit
+as input.</p>
+
+<ul>
+  <li>Load the value 48 into register r1.</li>
+  <li>Load 6 into r2.</li>
+  <li>Add r1 and r2, placing the resulting value into r3.</li>
+  <li>Output the result (r3) which should print the digit.</li>
+  <li>As always, halt.</li>
+</ul>
+
+<p>When you patch this test into the infrastructure described earlier (by
+adding it to the tests array), you should be able to give expected output "6"
+for print-six.</p>
+
+<h2 id="submitting">Submitting for the Lab</h2>
+
+<p>To submit your <code>.um</code> files, simply run:</p>
+
+<pre>submit40-lab-umtest</pre>
+
+<p>You should receive immediate feedback upon submission. 
+(And yes, you may resubmit)</p>
+
+<h2 id="additionaltests">Additional Unit Tests</h2>
+
+<p>Unit tests are a primary part of this assignment. Here are some suggestions
+for other unit tests:</p>
+
+<ul>
+  <li>Make sure Conditional Move does the right thing given a register whose
+  contents are zero.</li>
+
+  <li>Make sure Conditional Move does the right thing given a register whose
+  contents are not zero.</li>
+
+  <li>Read a character and print the character.</li>
+
+  <li>A more advanced version of the full unit test above: Read one character
+  from the input, which should be a digit. Use NAND to extract the least
+  significant 4 bits. Add this number to 48, and print the result, which should
+  be the original digit.</li>
+
+  <li>Test all the arithmetic instructions. You can print positive,
+  single-digit results if you add 48. You can tell a result fits in one digit
+  if when it is divided by 10, you get zero.</li>
+
+  <li>Insert data into the instruction stream, branch around it, and test the
+  Segmented Load and Segmented Store instructions on segment 0.</li>
+
+  <li>Test Map Segment and Unmap Segment, most likely in a loop.</li>
+
+  <li>Since your performance target is to execute 50 million instructions in
+  100 seconds, write a loop that you expect to execute 500,000 instructions and
+  see if it finishes in one second. When doing so,
+  <span style="font-style:italic;">don't forget to compile with
+  <code>-O1</code> and <code>-O2</code>; use whichever gives better
+  results.</span></li>
+</ul>
+
+<h2 id="systests">System Tests</h2>
+
+<p>At 
+<a href="http://www.cs.tufts.edu/comp/40/um">
+http://www.cs.tufts.edu/comp/40/um</a>, you will find some test binaries. If
+you can get good enough performance, they are quite interesting:</p>
+
+<ul>
+  <li>midmark.um   - medium benchmark; over 80 million instructions</li>
+  <li>advent.umz   - Adventure game; 700 million instructions</li>
+  <li>codex.umz    - UMIX operating system; 1.6 billion instructions</li>
+  <li>sandmark.umz - large benchmark; over 2 billion instructions</li>
+</ul>
+
+</div>
+
+
+<div id = "dogtag">
+Mark Sheldon, Charlie Meyer, Graham Goudeau, Chris Phifer<br>
+   Last Modified 31 Mar 2017
+</div> <!-- dogtag -->
+
+</body>
+</html>
